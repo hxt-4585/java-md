@@ -440,7 +440,7 @@ public Student student(){
 
 注意properties文件的编码
 
-![image-20241013164400291](F:\java\springboot\img\image-20241013164400291.png)
+![image-20241013164400291](.\img\image-20241013164400291.png)
 
 
 
@@ -574,23 +574,23 @@ person:
 - - **单引号**不会转义【\n 则为普通字符串显示】
   - **双引号**会转义【\n会显示为**换行符**】
 
-![image-20241016225355654](F:\java\springboot\img\image-20241016225355654.png)
+![image-20241016225355654](.\img\image-20241016225355654.png)
 
-![image-20241016225326117](F:\java\springboot\img\image-20241016225326117.png)
+![image-20241016225326117](.\img\image-20241016225326117.png)
 
 - **大文本**
 
 - - `|`开头，大文本写在下层，**保留文本格式**，**换行符正确显示**
 
-- ![image-20241016225624333](F:\java\springboot\img\image-20241016225624333.png)
+- ![image-20241016225624333](.\img\image-20241016225624333.png)
 
-- ![image-20241016225648993](F:\java\springboot\img\image-20241016225648993.png)
+- ![image-20241016225648993](.\img\image-20241016225648993.png)
 
 - - `>`开头，大文本写在下层，折叠换行符，将换行符换成空格
 
-![image-20241016230102430](F:\java\springboot\img\image-20241016230102430.png)
+![image-20241016230102430](.\img\image-20241016230102430.png)
 
-![image-20241016230122411](F:\java\springboot\img\image-20241016230122411.png)
+![image-20241016230122411](.\img\image-20241016230122411.png)
 
 
 
@@ -643,11 +643,11 @@ person:
 
 ```
 
-![image-20241016230430993](F:\java\springboot\img\image-20241016230430993.png)
+![image-20241016230430993](.\img\image-20241016230430993.png)
 
 ##### 4.3 日志配置
 
-![image-20241017200625058](F:\java\springboot\img\image-20241017200625058.png)
+![image-20241017200625058](.\img\image-20241017200625058.png)
 
 门面类似于 `JDBC`，提供一个接口。
 
@@ -812,3 +812,84 @@ org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration
 - 2、Web场景通用配置 `spring.web`
 - 3、文件上传配置 `spring.servlet.multipart`
 - 4、服务器的配置 `server`: 比如：编码方式
+
+
+
+##### 1.2 默认效果
+
+默认配置：
+
+1、包含了 `ContentNegotiatingViewResolver `和` BeanNameViewResolver `组件， **方便视图解析**
+
+2、**默认的静态资源处理机制**：静态资源放在 `static` 文件夹
+
+3、**自动注册了**   `Converter,GenericConverter,Formatter`组件。适配常见的 **数据类型转换**和**格式化需求**
+
+4、支持 **HttpMessageConverters**，可以**方便返回**json等**数据类型**
+
+5、**注册** MessageCodesResolver，方便**国际化**及错误消息处理
+
+6、**支持 静态** index.html
+
+7、**自动使用**ConfigurableWebBindingInitializer，实现消息处理、数据绑定、类型转化、数据校验等功能
+
+
+
+#### 2、静态资源
+
+##### 2.1 WebMvcAutoConfiguration原理
+
+生效条件
+
+```java
+@AutoConfiguration(
+    after = {DispatcherServletAutoConfiguration.class, TaskExecutionAutoConfiguration.class, ValidationAutoConfiguration.class}
+)
+@ConditionalOnWebApplication(
+    type = Type.SERVLET
+)
+@ConditionalOnClass({Servlet.class, DispatcherServlet.class, WebMvcConfigurer.class})
+@ConditionalOnMissingBean({WebMvcConfigurationSupport.class})
+@AutoConfigureOrder(-2147483638)
+@ImportRuntimeHints({WebResourcesRuntimeHints.class})
+```
+
+
+
+效果
+
+1、放了两个`Filter`：
+
+​	a、`HiddenHttpMethodFilter`：页面表单提交rest请求（GET，POST，PUT，DELETE）
+
+​	b、`FormContentFilter`：表单内容Filter，GET、POST请求可以携带数据，PUT、DELETE的请求体数据会被忽略
+
+2、给容器中放了`WebMvcConfigurer`组件，给SpringMvc添加各种定制功能。
+
+
+
+##### 2.2  默认规则
+
+###### 2.2.1 静态资源映射
+
+静态资源的映射规则在`WebMvcAutoConfiguration`中进行了定义
+
+1、`/webjars/**`的所有路径  资源都在 `classpath:/META-INF/resources/webjars/`
+
+![image-20241101205053967](.\img\image-20241101205053967.png)
+
+<img src=".\img\image-20241101205125366.png" alt="image-20241101205125366" style="zoom: 50%;" />
+
+2、`/**` 的所有路径 资源都在 `classpath:/META-INF/resources/、classpath:/resources/、classpath:/static/、classpath:/public/`
+
+![image-20241101204902797](.\img\image-20241101204902797.png)
+
+![image-20241101204943918](.\img\image-20241101204943918.png)
+
+3、所有静态资源都定义了缓存规则。【浏览器访问过一次，就会缓存一段时间】，但此功能参数无默认值
+
+1. period： 缓存间隔。 默认 0S；
+
+2. cacheControl：缓存控制。 默认无；
+
+3. useLastModified：是否使用lastModified头。 默认 false；
