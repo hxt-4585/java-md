@@ -886,10 +886,172 @@ org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration
 
 ![image-20241101204943918](.\img\image-20241101204943918.png)
 
-3、所有静态资源都定义了缓存规则。【浏览器访问过一次，就会缓存一段时间】，但此功能参数无默认值
+
+
+###### 2.2.2 静态资源缓存
+
+所有静态资源都定义了缓存规则。【浏览器访问过一次，就会缓存一段时间】，但此功能参数无默认值
 
 1. period： 缓存间隔。 默认 0S；
 
 2. cacheControl：缓存控制。 默认无；
 
 3. useLastModified：是否使用lastModified头。 默认 false；
+
+
+
+###### 2.2.3 欢迎页
+
+欢迎页规则在 `WebMvcAutoConfiguration` 中进行了定义：
+
+​	1、在 **静态资源** 目录下找 `index.html`
+
+​	2、没有则在 `templates` 下找 `index` 模板页
+
+
+
+###### 2.2.4 Favicon
+
+![image-20241104183321667](.\img\image-20241104183321667.png)
+
+​	标签页上的图标
+
+​	在静态资源目录下找 `favicon.ico` ，只需把图标名字改掉就行
+
+
+
+###### 2.2.5 缓存机制测试
+
+自定义静态资源路径、自定义缓存规则
+
+
+
+**配置文件方式**
+
+`spring.mvc`： 静态资源访问前缀路径
+
+`spring.web`：
+
+- 静态资源目录
+- 静态资源缓存策略
+
+```properties
+#自定义静态资源文件夹位置
+spring.web.resources.static-locations=classpath:/a/,classpath:/b/,classpath:/static/
+
+#2、 spring.mvc
+## 2.1. 自定义webjars路径前缀
+spring.mvc.webjars-path-pattern=/wj/**
+## 2.2. 静态资源访问路径前缀
+## http://localhost:8080/static/5.jpg
+spring.mvc.static-path-pattern=/static/**
+```
+
+PS：为什么 `META-INF/resources/` 目录下的静态资源仍就能访问到  
+
+![image-20241104192304268](F:\java\springboot\img\image-20241104192304268.png)
+
+
+
+**代码方式**
+
+```java
+// 第一种配置方式
+// @EnableWebMvc 禁用boot默认配置
+@Configuration
+public class MyConfig implements WebMvcConfigurer {
+    @Override
+    // http://localhost:8080/static/5.jpg 访问a目录下的内容，但boot默认配置的静态文件目录无需加/static
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        WebMvcConfigurer.super.addResourceHandlers(registry);
+
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/a/","classpath:/b/")
+                .setCacheControl(CacheControl.maxAge(1180, TimeUnit.SECONDS));    }
+}
+
+// 第二种配置方式
+@Configuration //这是一个配置类,给容器中放一个 WebMvcConfigurer 组件，就能自定义底层
+public class MyConfig  /*implements WebMvcConfigurer*/ {
+    @Bean
+    public WebMvcConfigurer webMvcConfigurer(){
+        return new WebMvcConfigurer() {
+            @Override
+            public void addResourceHandlers(ResourceHandlerRegistry registry) {
+                registry.addResourceHandler("/static/**")
+                        .addResourceLocations("classpath:/a/", "classpath:/b/")
+                        .setCacheControl(CacheControl.maxAge(1180, TimeUnit.SECONDS));
+            }
+        };
+    }
+
+}
+```
+
+**为什么容器中放一个 webMvcConfigurer 就能生效？ ** 
+
+![image-20241104194137501](F:\java\springboot\img\image-20241104194137501.png)
+
+```java
+// 类DelegatingWebMvcConfiguration
+@Autowired(
+	required = false
+)
+public void setConfigurers(List<WebMvcConfigurer> configurers) {
+    if (!CollectionUtils.isEmpty(configurers)) {
+    	this.configurers.addWebMvcConfigurers(configurers);
+    }
+
+}
+```
+
+
+
+#### 3、路径匹配
+
+**Spring5.3** 之后加入了更多的请求路径匹配的实现策略；
+
+以前只支持 AntPathMatcher 策略, 现在提供了 **PathPatternParser** （默认使用）策略。并且可以让我们指定到底使用那种策略。
+
+
+
+##### 3.1 Ant风格路径用法
+
+Ant 风格的规则：
+
+- *：表示**任意数量**的字符。
+- ?：表示任意**一个字符**。
+- **：表示**任意数量的目录**。
+- {}：表示一个命名的模式**占位符**。
+- []：表示**字符集合**，例如[a-z]表示小写字母。
+
+例如：
+
+- *.html 匹配任意名称，扩展名为.html的文件。
+- /folder1/*/*.java 匹配在folder1目录下的任意两级目录下的.java文件。
+- /folder2/**/*.jsp 匹配在folder2目录下任意目录深度的.jsp文件。
+- /{type}/{id}.html 匹配任意文件名为{id}.html，在任意命名的{type}目录下的文件。
+
+
+
+##### 3.2 模式切换
+
+如果路径中有 **，`如 /a*/**/b?/{p1:[a-f]+}`，PathPatternParser不支持，需要切换成AntPathMatcher
+
+```properties
+spring.mvc.pathmatch.matching-strategy=ant_path_matcher
+```
+
+
+
+#### 4、内容协商
+
+一套系统适配多端数据返回
+
+![image-20241104195947786](.\img\image-20241104195947786.png)
+
+
+
+##### 4.1 多端内容适配
+
+###### 4.1.1 默认规则
