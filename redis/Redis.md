@@ -112,3 +112,43 @@ Redis中的List类型和Java中的LinkList类似，双向链表结构。
 ![image-20241101222132032](.\img\image-20241101222132032.png)
 
 ![image-20241101222202664](.\img\Redis.md)
+
+
+
+### 2.5 Set类型
+
+支持交集、并集、差集等功能
+
+| 命令                 | 描述                                     |
+| -------------------- | ---------------------------------------- |
+| SADD key member ...  | 向set中添加一个或多个元素                |
+| SREM key member ...  | 删除元素                                 |
+| SCARD key            | 返回元素个数                             |
+| SISMEMBER key member | 判断一个元素是否在set中                  |
+| SMEMBERS key         | 获取set中所有元素                        |
+| SINTER key1 key2     | 求key1和key2的交集                       |
+| SUNION key1 key2 …   | 求key1与key2的并集                       |
+| SDIFF key1 key2      | 求key1和key2的差集，注意顺序不同结果不同 |
+
+![image-20241104123522339](.\img\image-20241104123522339.png)
+
+
+
+### 2.6 SortSet类型
+
+SortSet为可排序的set集合，与Java的TreeSet类似，但底层结构相差很大。
+
+SortedSet中的每一个元素都带有一个score属性，可以基于score属性对元素排序，底层的实现是一个跳表（SkipList）加 hash表。
+
+| 命令                      | 描述                                             |
+| ------------------------- | ------------------------------------------------ |
+| ZADD key score member ... | 添加一个或多个元素到SortSet，若已存在则更新score |
+| ZREM key member           | 删除sorted set中的一个指定元素                   |
+|                           |                                                  |
+|                           |                                                  |
+|                           |                                                  |
+|                           |                                                  |
+|                           |                                                  |
+|                           |                                                  |
+|                           |                                                  |
+|                           |                                                  |
